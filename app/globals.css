@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #060a0f; /* Dark background */
+  --foreground: #f0f0f0; /* Light text */
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: "Switzer Variable", Helvetica, sans-serif;
+}
