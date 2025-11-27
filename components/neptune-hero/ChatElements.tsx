@@ -8,19 +8,20 @@ import {
   DeployLogsBlock,
 } from "./ChatCodeBlocks";
 
-import type { AnimationState, StepId, ChatMessage } from "./types";
-import { STATUS_MESSAGES, PLACEHOLDER_TEXT, ACTION_LABELS } from "./constants";
+import type { AnimationState, ChatItem } from "./types";
+import { PLACEHOLDER_TEXT } from "./constants";
 
 /* ---------- Message text with line-by-line animation ---------- */
 
 interface MessageTextProps {
-  message: ChatMessage;
+  text: string;
   isUser: boolean;
+  itemId: string;
 }
 
-function MessageText({ message, isUser }: MessageTextProps) {
+function MessageText({ text, isUser, itemId }: MessageTextProps) {
   const [visibleLines, setVisibleLines] = useState(0);
-  const lines = message.text.split("\n");
+  const lines = text.split("\n");
   const hasMultipleLines = lines.length > 1;
   const shouldAnimateLines = !isUser && hasMultipleLines;
 
@@ -46,10 +47,10 @@ function MessageText({ message, isUser }: MessageTextProps) {
       timers.forEach((timer) => window.clearTimeout(timer));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [message.id, message.text, shouldAnimateLines]);
+  }, [itemId, text, shouldAnimateLines]);
 
   if (!shouldAnimateLines) {
-    return <>{message.text}</>;
+    return <>{text}</>;
   }
 
   return (
@@ -74,87 +75,7 @@ interface ChatElementsProps {
   state: AnimationState;
 }
 
-/* Determines which message should show the logs/thinking block */
-function getLogsAnchorIdForStep(step: StepId, logs: string[]): string | null {
-  switch (step) {
-    case "describe":
-      return "neptune-greeting";
-    case "review":
-      // Show neptune.json generation status below CLI response
-      if (logs.includes("GENERATING_NEPTUNE_JSON")) {
-        return "neptune-generating-json";
-      }
-      // Show analyze statuses below command
-      return "neptune-analyzing";
-    case "deploy":
-      // Show deployment progress statuses below command after approval
-      if (logs.includes("DEPLOY_RUNNING") || logs.includes("DEPLOY_LOGS")) {
-        return "neptune-deploying";
-      }
-      // Show preparation statuses above command before approval
-      return "neptune-deploy-prep";
-    default:
-      return null;
-  }
-}
-
-/* ---------- ANALYZE thinking status ---------- */
-function getAnalyzeStatus(
-  logs: string[],
-  fallbackStatus?: string
-): { main: string; sub?: string } | null {
-  if (!logs.length) {
-    if (!fallbackStatus) return null;
-    return { main: fallbackStatus };
-  }
-
-  const last = logs[logs.length - 1];
-
-  if (last === "ANALYZE_START") {
-    return { main: STATUS_MESSAGES.ANALYSING_PROJECT };
-  }
-
-  if (last === "ANALYZE_GENERATING_SPEC") {
-    return { main: STATUS_MESSAGES.GENERATING_SPEC };
-  }
-
-  if (last === "GENERATING_NEPTUNE_JSON") {
-    return { main: "Generating neptune.json…" };
-  }
-
-  return fallbackStatus ? { main: fallbackStatus } : null;
-}
-
-/* ---------- DEPLOY status ---------- */
-function getDeployStatus(
-  logs: string[],
-  fallbackStatus?: string
-): { main: string; sub?: string } | null {
-  if (!logs.length) {
-    if (!fallbackStatus) return null;
-    return { main: fallbackStatus };
-  }
-
-  const last = logs[logs.length - 1];
-
-  if (last === "DEPLOY_GENERATING_CMD") {
-    return { main: STATUS_MESSAGES.GENERATING_DEPLOY_CMD };
-  }
-
-  if (last === "DEPLOY_RUNNING") {
-    return { main: STATUS_MESSAGES.DEPLOYING_TO_NEPTUNE };
-  }
-
-  if (last === "DEPLOY_LOGS") {
-    return { main: STATUS_MESSAGES.GENERATING_LOGS };
-  }
-
-  return fallbackStatus ? { main: fallbackStatus } : null;
-}
-
 export function ChatElements({ state }: ChatElementsProps) {
-  const logsAnchorId = getLogsAnchorIdForStep(state.step, state.logs);
-
   const placeholderText = PLACEHOLDER_TEXT.INPUT;
 
   const isUserTypingSource = !!state.inputText && state.inputText.length > 0;
@@ -189,22 +110,6 @@ export function ChatElements({ state }: ChatElementsProps) {
 
   const isUserTyping = isUserTypingSource;
   const displayText = isUserTyping ? typedInput : placeholderText;
-
-  const isDeployStep = state.step === "deploy";
-
-  const analyzeStatus =
-    state.step === "review"
-      ? getAnalyzeStatus(state.logs, state.statusLabel)
-      : null;
-
-  const deployStatus =
-    state.step === "deploy"
-      ? getDeployStatus(state.logs, state.statusLabel)
-      : null;
-
-  const hasFinalDeployMessage = state.chat.some(
-    (m) => m.id === "neptune-done"
-  );
 
   return (
     <>
@@ -279,285 +184,20 @@ export function ChatElements({ state }: ChatElementsProps) {
             padding: "20px",
           }}
         >
-          {state.chat.map((msg, idx) => {
-            const isUser = msg.sender === "user";
-            const isLast = idx === state.chat.length - 1;
-
-            const showGenerateCommand =
-              msg.id === "neptune-generate-command" &&
-              state.commandChoice != null &&
-              state.commandSnippet != null;
-
-            const showGenerateCliResponse =
-              msg.id === "neptune-generate-success" &&
-              state.generateSpecCliResponse != null;
-
-            const showConfigSnippet =
-              msg.id === "neptune-json-created" &&
-              state.configSnippet != null;
-
-            const showDeployCommand =
-              msg.id === "neptune-deploy-command" &&
-              state.commandChoice != null &&
-              state.commandSnippet != null;
-
-            const showStatusMessage =
-              !!state.statusLabel &&
-              ((state.step === "describe" && msg.id === "neptune-greeting") ||
-               (state.step === "review" && msg.id === "neptune-generate-command") ||
-               (isDeployStep && msg.id === "neptune-deploy-prep"));
-
-            const showLogsAnalyze =
-              state.step === "review" &&
-              !!analyzeStatus?.main &&
-              !!logsAnchorId &&
-              msg.id === logsAnchorId;
-
-            const showDeployThinking =
-              isDeployStep &&
-              !!logsAnchorId &&
-              msg.id === logsAnchorId &&
-              !!deployStatus?.main &&
-              !hasFinalDeployMessage;
-
-            const showDeployLogs =
-              msg.id === "neptune-deploy-logs" &&
-              state.deployLogsText != null;
-
-            const showDeployCliResponse =
-              msg.id === "neptune-deploy-cli-response" &&
-              state.deployFinalCliResponse != null;
+          {state.items.map((item, idx) => {
+            const isLast = idx === state.items.length - 1;
 
             return (
               <div
-                key={msg.id}
-                className={
-                  "chat-message" + (isLast ? " chat-message--enter" : "")
-                }
+                key={item.id}
+                className={"chat-item" + (isLast ? " chat-item--enter" : "")}
                 style={{
                   display: "flex",
                   flexDirection: "column",
                   gap: 4,
                 }}
               >
-                {/* Text message */}
-                {msg.text && (
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: isUser ? "flex-end" : "flex-start",
-                    }}
-                  >
-                    <div
-                      style={{
-                        maxWidth: "100%",
-                        padding: isUser ? "8px 12px" : undefined,
-                        borderRadius: 8,
-                        background: isUser ? "#10161D" : "none",
-                        color: "#f0f0f0",
-                        fontSize: 13,
-                        lineHeight: 1.8,
-                        whiteSpace: "pre-wrap",
-                      }}
-                    >
-                      <MessageText message={msg} isUser={isUser} />
-                    </div>
-                  </div>
-                )}
-
-                {/* Status message with shiny animation */}
-                {showStatusMessage && state.statusLabel && (
-                  <div
-                    style={{
-                      width: "100%",
-                      alignSelf: "stretch",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 4,
-                      minHeight: 0,
-                    }}
-                  >
-                    <div
-                      className="shiny-text"
-                      style={{
-                        fontSize: 13,
-                        lineHeight: "150%",
-                        color: "#B1BDC8",
-                      }}
-                    >
-                      {state.statusLabel}
-                    </div>
-                  </div>
-                )}
-
-                {/* ANALYZE: shiny status cycling (no log box) */}
-                {showLogsAnalyze && (
-                  <div
-                    style={{
-                      width: "100%",
-                      alignSelf: "stretch",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 4,
-                      minHeight: 0,
-                    }}
-                  >
-                    {analyzeStatus?.main && (
-                      <div
-                        className="shiny-text"
-                        style={{
-                          fontSize: 13,
-                          lineHeight: "150%",
-                          color: "#B1BDC8",
-                        }}
-                      >
-                        {analyzeStatus.main}
-                      </div>
-                    )}
-                    {analyzeStatus?.sub && (
-                      <div
-                        style={{
-                          fontSize: 12,
-                          lineHeight: "150%",
-                          color: "#6B7280",
-                        }}
-                      >
-                        {analyzeStatus.sub}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* REVIEW: Generate spec command block */}
-                {showGenerateCommand &&
-                  state.commandChoice &&
-                  state.commandSnippet && (
-                    <div
-                      style={{
-                        width: "100%",
-                        alignSelf: "stretch",
-                        marginTop: 8,
-                      }}
-                    >
-                      <CommandBlock
-                        choice={state.commandChoice}
-                        snippet={state.commandSnippet}
-                        pulse={state.commandPulsing}
-                      />
-                    </div>
-                  )}
-
-                {/* REVIEW: Generate spec CLI response */}
-                {showGenerateCliResponse && state.generateSpecCliResponse && (
-                  <div
-                    style={{
-                      width: "100%",
-                      alignSelf: "stretch",
-                      marginTop: 8,
-                    }}
-                  >
-                    <CliBlock
-                      label={state.generateSpecCliResponse.filename}
-                      code={state.generateSpecCliResponse.code}
-                    />
-                  </div>
-                )}
-
-                {/* REVIEW: neptune.json card with approve/decline actions */}
-                {showConfigSnippet && state.configSnippet && (
-                  <div
-                    style={{
-                      width: "100%",
-                      alignSelf: "stretch",
-                      marginTop: 8,
-                    }}
-                  >
-                    <FileBlock
-                      label={state.configSnippet.filename}
-                      code={state.configSnippet.code}
-                      primaryActionLabel={ACTION_LABELS.APPROVE}
-                      secondaryActionLabel={ACTION_LABELS.DECLINE}
-                      showActions={state.configSnippetShowActions ?? false}
-                      approved={state.configSnippetApproved ?? false}
-                      pulse={state.configSnippetPulsing}
-                    />
-                  </div>
-                )}
-
-                {/* DEPLOY: command card */}
-                {showDeployCommand &&
-                  state.commandChoice &&
-                  state.commandSnippet && (
-                    <div
-                      style={{
-                        width: "100%",
-                        alignSelf: "stretch",
-                      }}
-                    >
-                      <CommandBlock
-                        choice={state.commandChoice}
-                        snippet={state.commandSnippet}
-                        pulse={state.commandPulsing}
-                      />
-                  </div>
-                )}
-
-                {/* DEPLOY: shiny thinking status (no CLI log box) */}
-                {showDeployThinking && (
-                  <div
-                    style={{
-                      width: "100%",
-                      alignSelf: "stretch",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 4,
-                      minHeight: 0,
-                    }}
-                  >
-                    <div
-                      className="shiny-text"
-                      style={{
-                        fontSize: 13,
-                        lineHeight: "150%",
-                        color: "#B1BDC8",
-                      }}
-                    >
-                      {deployStatus!.main}
-                    </div>
-                  </div>
-                )}
-
-                {/* DEPLOY: deploy logs block */}
-                {showDeployLogs && state.deployLogsText && (
-                  <div
-                    style={{
-                      width: "100%",
-                      alignSelf: "stretch",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 8,
-                      marginTop: 8,
-                    }}
-                  >
-                    <DeployLogsBlock logs={state.deployLogsText} />
-                  </div>
-                )}
-
-                {/* DEPLOY: final CLI response */}
-                {showDeployCliResponse && state.deployFinalCliResponse && (
-                  <div
-                    style={{
-                      width: "100%",
-                      alignSelf: "stretch",
-                      marginTop: 8,
-                    }}
-                  >
-                    <CliBlock
-                      label={state.deployFinalCliResponse.filename}
-                      code={state.deployFinalCliResponse.code}
-                    />
-                  </div>
-                )}
+                {renderChatItem(item)}
               </div>
             );
           })}
@@ -641,7 +281,7 @@ export function ChatElements({ state }: ChatElementsProps) {
 
       {/* LOCAL STYLES: entrance anim + caret + shiny text */}
       <style jsx>{`
-        .chat-message {
+        .chat-item {
           transform: translateY(0);
           opacity: 1;
         }
@@ -657,7 +297,7 @@ export function ChatElements({ state }: ChatElementsProps) {
           }
         }
 
-        .chat-message--enter {
+        .chat-item--enter {
           animation: chat-fade-up 260ms ease-out;
         }
 
@@ -719,4 +359,142 @@ export function ChatElements({ state }: ChatElementsProps) {
       `}</style>
     </>
   );
+}
+
+/* ---------- Render individual chat items ---------- */
+
+function renderChatItem(item: ChatItem): React.ReactNode {
+  switch (item.type) {
+    case "message": {
+      const isUser = item.sender === "user";
+      return (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: isUser ? "flex-end" : "flex-start",
+          }}
+        >
+          <div
+            style={{
+              maxWidth: "100%",
+              padding: isUser ? "8px 12px" : undefined,
+              borderRadius: 8,
+              background: isUser ? "#10161D" : "none",
+              color: "#f0f0f0",
+              fontSize: 13,
+              lineHeight: 1.8,
+              whiteSpace: "pre-wrap",
+            }}
+          >
+            <MessageText text={item.text} isUser={isUser} itemId={item.id} />
+          </div>
+        </div>
+      );
+    }
+
+    case "status": {
+      return (
+        <div
+          style={{
+            width: "100%",
+            alignSelf: "stretch",
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+            minHeight: 0,
+          }}
+        >
+          <div
+            className="shiny-text"
+            style={{
+              fontSize: 13,
+              lineHeight: "150%",
+              color: "#B1BDC8",
+            }}
+          >
+            {item.label}
+          </div>
+        </div>
+      );
+    }
+
+    case "commandBlock": {
+      return (
+        <div
+          style={{
+            width: "100%",
+            alignSelf: "stretch",
+            marginTop: 8,
+          }}
+        >
+          <CommandBlock
+            choice={{
+              question: item.question,
+              choices: item.choices,
+              selectedIndex: item.selectedIndex,
+              approved: item.approved,
+            }}
+            snippet={item.snippet}
+            pulse={item.pulse}
+          />
+        </div>
+      );
+    }
+
+    case "fileBlock": {
+      return (
+        <div
+          style={{
+            width: "100%",
+            alignSelf: "stretch",
+            marginTop: 8,
+          }}
+        >
+          <FileBlock
+            label={item.snippet.filename}
+            code={item.snippet.code}
+            primaryActionLabel={item.primaryActionLabel}
+            secondaryActionLabel={item.secondaryActionLabel}
+            showActions={item.showActions}
+            approved={item.approved}
+            pulse={item.pulse}
+          />
+        </div>
+      );
+    }
+
+    case "cliBlock": {
+      return (
+        <div
+          style={{
+            width: "100%",
+            alignSelf: "stretch",
+            marginTop: 8,
+          }}
+        >
+          <CliBlock label={item.snippet.filename} code={item.snippet.code} />
+        </div>
+      );
+    }
+
+    case "logsBlock": {
+      return (
+        <div
+          style={{
+            width: "100%",
+            alignSelf: "stretch",
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            marginTop: 8,
+          }}
+        >
+          <DeployLogsBlock logs={item.text} />
+        </div>
+      );
+    }
+
+    default:
+      return null;
+  }
 }

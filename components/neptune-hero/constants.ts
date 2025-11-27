@@ -59,18 +59,6 @@ export const PLACEHOLDER_TEXT = {
   INPUT: "Describe what you want to deploy…",
 } as const;
 
-/* ---------- STEP META ---------- */
-
-export const STEP_META = {
-  DESCRIBE_LABEL: "Describe",
-  DESCRIBE_DESCRIPTION: "Say what you want to deploy — Neptune takes it from there.",
-  REVIEW_LABEL: "Review",
-  REVIEW_DESCRIPTION:
-    "Neptune inspects your code, infers services, and proposes infra.",
-  DEPLOY_LABEL: "Deploy",
-  DEPLOY_DESCRIPTION: "Approve the plan and Neptune ships it to the cloud.",
-} as const;
-
 /* ---------- COMMANDS ---------- */
 
 export const COMMANDS = {
@@ -151,4 +139,3 @@ Waiting for deployment to become ready...
   },
   "final_url": "https://my-neptune-project-j8h3j3q9-2oqmso473a-nw.a.run.app"
 }`;
-

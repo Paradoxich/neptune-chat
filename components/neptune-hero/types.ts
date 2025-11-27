@@ -3,14 +3,7 @@
 export type StepId = "describe" | "review" | "deploy";
 export type Sender = "user" | "neptune";
 
-/* ---------- Chat / cards / snippets types ---------- */
-
-export interface ChatMessage {
-  id: string;
-  sender: Sender;
-  text: string;
-  typingDurationMs?: number;
-}
+/* ---------- Basic types ---------- */
 
 export interface FileSnippet {
   filename: string;
@@ -18,42 +11,71 @@ export interface FileSnippet {
   code: string;
 }
 
-export interface ChoicePrompt {
+/* ---------- Chat item types ---------- */
+
+export interface ChatMessageItem {
+  type: "message";
+  id: string;
+  sender: Sender;
+  text: string;
+  typingDurationMs?: number;
+}
+
+export interface StatusItem {
+  type: "status";
+  id: string;
+  label: string;
+}
+
+export interface CommandBlockItem {
+  type: "commandBlock";
+  id: string;
+  snippet: FileSnippet;
   question: string;
   choices: string[];
   selectedIndex: number;
-  approved?: boolean;
+  approved: boolean;
+  pulse?: boolean;
 }
+
+export interface FileBlockItem {
+  type: "fileBlock";
+  id: string;
+  snippet: FileSnippet;
+  primaryActionLabel: string;
+  secondaryActionLabel: string;
+  showActions: boolean;
+  approved: boolean;
+  pulse?: boolean;
+}
+
+export interface CliBlockItem {
+  type: "cliBlock";
+  id: string;
+  snippet: FileSnippet;
+}
+
+export interface LogsBlockItem {
+  type: "logsBlock";
+  id: string;
+  text: string;
+  title: string;
+}
+
+export type ChatItem =
+  | ChatMessageItem
+  | StatusItem
+  | CommandBlockItem
+  | FileBlockItem
+  | CliBlockItem
+  | LogsBlockItem;
+
+/* ---------- Animation state ---------- */
 
 export interface AnimationState {
   step: StepId;
   durationMs: number;
-
-  chat: ChatMessage[];
-
-  statusLabel?: string;
-  logs: string[];
-
-  configSnippet?: FileSnippet;
-  configSnippetPulsing?: boolean;
-  configSnippetShowActions?: boolean;
-  configSnippetApproved?: boolean;
-  generateSpecCliResponse?: FileSnippet;
-  commandChoice?: ChoicePrompt;
-  commandSnippet?: FileSnippet;
-  commandPulsing?: boolean;
-  deployLogsText?: string;
-  deployFinalCliResponse?: FileSnippet;
-
+  items: ChatItem[];
   inputText: string;
   typingDurationMs?: number;
 }
-
-/* ---------- Steps meta ---------- */
-
-export interface StepMeta {
-  id: StepId;
-  label: string;
-  description: string;
-}
-
