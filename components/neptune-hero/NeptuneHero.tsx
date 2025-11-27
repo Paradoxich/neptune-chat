@@ -47,7 +47,7 @@ export default function NeptuneHero() {
                 color: "#B1BDC8",
                 cursor: "pointer",
                 opacity: 0.75,
-                display: "none", // stavi "block" ako želiš vidjeti gumb
+                display: "block", // stavi "block" ako želiš vidjeti gumb
               }}
             >
               {isPlaying ? "Pause" : "Play"}

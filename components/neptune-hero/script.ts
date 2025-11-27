@@ -99,7 +99,7 @@ export const SCRIPT: ScriptEvent[] = [
     type: "status",
     step: "describe",
     label: STATUS_MESSAGES.PLANNING_NEXT_STEPS,
-    durationMs: 1000,
+    durationMs: 3000,
   },
 
   // 4) Neptune explains plan
@@ -117,7 +117,7 @@ export const SCRIPT: ScriptEvent[] = [
     type: "status",
     step: "review",
     label: "Generating command…",
-    durationMs: 800,
+    durationMs: 3000,
   },
 
   // Command block appears (pending)
@@ -204,7 +204,7 @@ neptune generate spec --output json --wd /Users/johndoe/my-neptune-project`
     type: "status",
     step: "review",
     label: "Generating neptune.json…",
-    durationMs: 800,
+    durationMs: 1500,
   },
 
   // ========== CONFIG REVIEW FLOW ==========
@@ -264,7 +264,7 @@ neptune generate spec --output json --wd /Users/johndoe/my-neptune-project`
     type: "status",
     step: "deploy",
     label: STATUS_MESSAGES.GENERATING_DEPLOY_CMD,
-    durationMs: 800,
+    durationMs: 1500,
   },
 
   // Deploy command block (pending)

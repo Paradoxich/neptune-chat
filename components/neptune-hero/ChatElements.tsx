@@ -279,7 +279,38 @@ export function ChatElements({ state }: ChatElementsProps) {
         </div>
       </div>
 
-      {/* LOCAL STYLES: entrance anim + caret + shiny text */}
+      {/* GLOBAL STYLES: shiny text */}
+      <style jsx global>{`
+        .shiny-text {
+          background: linear-gradient(
+            90deg,
+            #10161D 0%,
+            #415266 30%,
+            
+            #FFFFFF 50%,
+            #9CA3AF 70%,
+           
+            #10161D 100%
+          );
+          background-size: 200% 100%;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: shimmer 3.5s linear infinite;
+          will-change: background-position;
+        }
+
+        @keyframes shimmer {
+          0% {
+            background-position: 200% center;
+          }
+          100% {
+            background-position: -200% center;
+          }
+        }
+      `}</style>
+
+      {/* LOCAL STYLES: entrance anim + caret */}
       <style jsx>{`
         .chat-item {
           transform: translateY(0);
@@ -338,23 +369,8 @@ export function ChatElements({ state }: ChatElementsProps) {
         }
 
         .shiny-text {
-          position: relative;
-          display: inline-block;
-          background-image: linear-gradient(120deg, #10161D, #b1bdc8, #10161D);
-          background-size: 200% auto;
-          background-clip: text;
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          animation: shiny-text-slide 1.7s linear infinite;
-        }
-
-        @keyframes shiny-text-slide {
-          0% {
-            background-position: 200% 0;
-          }
-          100% {
-            background-position: 0% 0;
-          }
+          color: red;
+          font-weight: bold;
         }
       `}</style>
     </>
@@ -409,7 +425,6 @@ function renderChatItem(item: ChatItem): React.ReactNode {
             style={{
               fontSize: 13,
               lineHeight: "150%",
-              color: "#B1BDC8",
             }}
           >
             {item.label}
