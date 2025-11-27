@@ -11,6 +11,13 @@ export interface FileSnippet {
   code: string;
 }
 
+export interface ChoicePrompt {
+  question: string;
+  choices: string[];
+  selectedIndex: number;
+  approved?: boolean;
+}
+
 /* ---------- Chat item types ---------- */
 
 export interface ChatMessageItem {

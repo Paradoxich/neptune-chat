@@ -2,7 +2,13 @@
 // Timeline-based state management and animation hook
 
 import { useEffect, useRef, useState } from "react";
-import type { StepId, AnimationState, ChatItem } from "./types";
+import type { 
+  StepId, 
+  AnimationState, 
+  ChatItem,
+  CommandBlockItem,
+  FileBlockItem 
+} from "./types";
 import { SCRIPT, ScriptEvent } from "./script";
 
 /* ---------- Timeline events ---------- */
@@ -155,8 +161,9 @@ function buildTimelineFromScript(script: ScriptEvent[]): TimelineEvent[] {
       case "updateCommandBlock": {
         const updates: Partial<ChatItem> = { type: "commandBlock" };
         if (s.approved !== undefined)
-          (updates as any).approved = s.approved;
-        if (s.pulse !== undefined) (updates as any).pulse = s.pulse;
+          (updates as Partial<CommandBlockItem>).approved = s.approved;
+        if (s.pulse !== undefined) 
+          (updates as Partial<CommandBlockItem>).pulse = s.pulse;
 
         push({
           type: "updateItem",
@@ -190,10 +197,11 @@ function buildTimelineFromScript(script: ScriptEvent[]): TimelineEvent[] {
       case "updateFileBlock": {
         const updates: Partial<ChatItem> = { type: "fileBlock" };
         if (s.showActions !== undefined)
-          (updates as any).showActions = s.showActions;
+          (updates as Partial<FileBlockItem>).showActions = s.showActions;
         if (s.approved !== undefined)
-          (updates as any).approved = s.approved;
-        if (s.pulse !== undefined) (updates as any).pulse = s.pulse;
+          (updates as Partial<FileBlockItem>).approved = s.approved;
+        if (s.pulse !== undefined) 
+          (updates as Partial<FileBlockItem>).pulse = s.pulse;
 
         push({
           type: "updateItem",
