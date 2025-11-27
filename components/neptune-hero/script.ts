@@ -77,6 +77,13 @@ const createSnippet = (
 
 export const SCRIPT: ScriptEvent[] = [
 
+// 2) Neptune greeting
+{
+    type: "agentMessage",
+    step: "describe",
+    text: "Hello, Archie! How can I help you today?",
+    durationMs: 1800,
+  },
 
   // 1) User types and sends request
   {
